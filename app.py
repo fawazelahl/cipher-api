@@ -310,3 +310,14 @@ def corridor_55_debug(payload: Payload):
         "full_55_equations": full_55,
         "final_equation": full_55[-1]
     }
+@app.post("/api/shopify-order-paid")
+async def shopify_order_paid(request: Request):
+    data = await request.json()
+
+    return {
+        "received": True,
+        "message": "Shopify order webhook received.",
+        "order_id": data.get("id"),
+        "email": data.get("email"),
+        "line_items_count": len(data.get("line_items", []))
+    }
