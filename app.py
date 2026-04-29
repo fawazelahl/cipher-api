@@ -73,41 +73,6 @@ def load_real_equations():
     return df["equation"].dropna().astype(str).tolist()
 
 
-@app.post("/api/numeromancy-report")
-def numeromancy_report(payload: Payload):
-    try:
-        date.fromisoformat(payload.dob)
-    except:
-        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
-
-    result = compute_number(payload.name, payload.dob)
-    numeric_name = result["result"]
-
-    equations = load_real_equations()
-
-    numeric_text = str(numeric_name)
-    reverse_numeric_text = numeric_text[::-1]
-
-    matching_equations = [
-        eq for eq in equations
-        if numeric_text in eq or reverse_numeric_text in eq
-    ]
-
-    preview_3_equations = matching_equations[:3]
-
-    if len(preview_3_equations) < 3:
-        preview_3_equations.append("C127_3434")
-
-    intro = (
-        "Your Numeric Name opens a corridor of meaning. "
-        "This preview shows equations connected to your number from the real equation library. "
-        "The full 55-equation report is designed to lead toward C127_3434."
-    )
-
-    return {
-        "numeric_name": numeric_name,
-        "intro": intro,
-        "preview_3_equations": preview_3_equations,
-        "matching_equations_found": len(matching_equations),
-        "paid_report_message": "Unlock the full 55-Equation Numeromancy Report for $5 CAD."
-    }
+path_found
+equation_count
+full_55_equations
