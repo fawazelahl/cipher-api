@@ -246,8 +246,9 @@ def compute(payload: Payload):
 
 @app.post("/api/numeromancy-report")
 def numeromancy_report(payload: Payload):
-          return {
+    return {
         "status": "debug endpoint reached",
         "name": payload.name,
         "dob": payload.dob
     }
+        
