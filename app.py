@@ -234,6 +234,9 @@ def corridor_55_debug(payload: Payload):
 
     starts = list(dict.fromkeys(starts))
 
+    # If the viewer's number is already 127, do not start with the final anchor.
+    # The final anchor must remain equation 55.
+    starts = [eq for eq in starts if eq != TARGET_EQUATION]
     queue = deque([[s] for s in starts])
     visited = set(starts)
     path = []
