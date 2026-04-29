@@ -130,7 +130,22 @@ def compute(payload: Payload):
 
 @app.post("/api/numeromancy-report")
 def numeromancy_report(payload: Payload):
-    return corridor_55_debug(payload)
+    result = corridor_55_debug(payload)
+
+    intro = (
+        "Your Numeric Name opens a corridor of connected equations. "
+        "The first three equations begin your preview in sequence. "
+        "The full 55-equation report leads toward the final convergence: C127_3434."
+    )
+
+    return {
+        "numeric_name": result["numeric_name"],
+        "intro": intro,
+        "preview_3_equations": result["preview_3_equations"],
+        "full_55_equations": result["full_55_equations"],
+        "equation_count": result["equation_count"],
+        "final_equation": result["final_equation"]
+    }
 
 @app.post("/api/corridor-debug")
 def corridor_debug(payload: Payload):
