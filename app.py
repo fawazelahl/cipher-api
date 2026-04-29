@@ -67,8 +67,43 @@ def compute(payload: Payload):
 
 @app.post("/api/numeromancy-report")
 def numeromancy_report(payload: Payload):
+    try:
+        date.fromisoformat(payload.dob)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
+
+    import pandas as pd
+
+    result = compute_number(payload.name, payload.dob)
+    numeric_name = result["result"]
+
+    df = pd.read_excel("Elahl_Parsed_Equations_FULL.xlsx", sheet_name=0)
+
+    if "equation" not in df.columns:
+        raise HTTPException(
+            status_code=500,
+            detail="Excel file must contain column named 'equation'"
+        )
+
+    equations = df["equation"].dropna().astype(str).tolist()
+
+    num = str(numeric_name)
+    rev = num[::-1]
+
+    matches = [eq for eq in equations if num in eq or rev in eq]
+
+    preview = matches[:3] if matches else ["C127_3434"]
+
+    intro = (
+        "Your Numeric Name opens a corridor of meaning. "
+        "This preview is drawn from the real equation library. "
+        "The full 55-equation report will be shaped toward C127_3434."
+    )
+
     return {
-        "status": "debug endpoint reached",
-        "name": payload.name,
-        "dob": payload.dob
+        "numeric_name": numeric_name,
+        "intro": intro,
+        "preview_3_equations": preview,
+        "matching_equations_found": len(matches),
+        "paid_report_message": "Unlock the full 55-Equation Numeromancy Report for $5 CAD."
     }
