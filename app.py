@@ -58,3 +58,21 @@ def compute(payload: Payload):
     out["version"] = "v1.0.0"
     out["latency_ms"] = int((time.time()-t0)*1000)
     return out
+# ================================
+# NUMEROMANCY REPORT (STEP 1)
+# ================================
+
+@app.post("/api/numeromancy-report")
+def numeromancy_report(payload: Payload):
+    try:
+        date.fromisoformat(payload.dob)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
+
+    result = compute_number(payload.name, payload.dob)
+    numeric_name = result["result"]
+
+    return {
+        "numeric_name": numeric_name,
+        "message": "Numeromancy endpoint is working."
+    }
