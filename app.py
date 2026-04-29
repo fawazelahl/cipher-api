@@ -163,39 +163,50 @@ def find_path(equations, start_number: int, max_depth: int = 55):
     return []
 
 
-def to_55(path):
+def to_55(path, equations):
     if not path:
         return []
 
     if path[-1] != TARGET_EQUATION:
         return []
 
-    if len(path) == 55:
-        return path
+    base_path = path[:-1]
 
-    if len(path) > 55:
+    if not base_path:
         return []
 
-    needed = 55 - len(path)
-    base = path[:-1]
+    lookup, num_index = build_indices(equations)
 
-    if not base:
-        return []
+    expanded = list(base_path)
+    used = set(expanded)
 
-    filler = []
     i = 0
 
-    while len(filler) < needed:
-        filler.append(base[i % len(base)])
-        i += 1
+    while len(expanded) < 54:
+        current_eq = expanded[i % len(expanded)]
 
-    return path[:-1] + filler + [TARGET_EQUATION]
+        if current_eq not in lookup:
+            i += 1
+            continue
 
+        family = lookup[current_eq]["family"]
 
-# tiny in-memory rate limit (30 req/hour/IP)
-BUCKET = {}
-RATE = 30
+        candidates = []
+        for number in family:
+            candidates.extend(num_index.get(number, []))
 
+        candidates = [c for c in dict.fromkeys(candidates) if c not in used]
+
+        if candidates:
+            new_eq = candidates[0]
+            expanded.append(new_eq)
+            used.add(new_eq)
+        else:
+            i += 1
+            if i > len(expanded) * 2:
+                break
+
+    return expanded[:54] + [TARGET_EQUATION]
 
 @app.middleware("http")
 async def rate_limit(request: Request, call_next):
@@ -241,7 +252,7 @@ def numeromancy_report(payload: Payload):
     equations = load_real_equations()
 
     raw_path = find_path(equations, numeric_name, max_depth=55)
-    full_55 = to_55(raw_path)
+    full_55 = to_55(raw_path, equations)
 
     intro = (
         "Your Numeric Name opens a corridor of connected equations. "
