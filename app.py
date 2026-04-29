@@ -130,35 +130,7 @@ def compute(payload: Payload):
 
 @app.post("/api/numeromancy-report")
 def numeromancy_report(payload: Payload):
-    try:
-        date.fromisoformat(payload.dob)
-    except:
-        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
-
-    result = compute_number(payload.name, payload.dob)
-    numeric_name = result["result"]
-
-    equations = load_equations()
-
-    num = str(numeric_name)
-    rev = num[::-1]
-    matches = [eq for eq in equations if num in eq or rev in eq]
-    preview = matches[:3] if matches else ["C127_3434"]
-
-    intro = (
-        "Your Numeric Name opens a corridor of meaning. "
-        "This preview is drawn from the real equation library. "
-        "The full 55-equation report will be shaped toward C127_3434."
-    )
-
-    return {
-        "numeric_name": numeric_name,
-        "intro": intro,
-        "preview_3_equations": preview,
-        "matching_equations_found": len(matches),
-        "paid_report_message": "Unlock the full 55-Equation Numeromancy Report for $5 CAD.",
-    }
-
+    return corridor_55_debug(payload)
 
 @app.post("/api/corridor-debug")
 def corridor_debug(payload: Payload):
