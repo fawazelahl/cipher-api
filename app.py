@@ -185,6 +185,7 @@ def to_55(path, equations):
     while len(expanded) < 54:
         current_eq = expanded[i % len(expanded)]
 
+        # 🔒 SAFETY CHECK
         if current_eq not in lookup:
             i += 1
             continue
@@ -203,8 +204,12 @@ def to_55(path, equations):
             used.add(new_eq)
         else:
             i += 1
-            if i > len(expanded) * 2:
+            if i > len(expanded) * 3:
                 break
+
+    # 🔒 FINAL SAFETY
+    if len(expanded) < 1:
+        return []
 
     return expanded[:54] + [TARGET_EQUATION]
 
