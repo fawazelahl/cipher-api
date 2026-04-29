@@ -59,7 +59,7 @@ def compute(payload: Payload):
     out["latency_ms"] = int((time.time()-t0)*1000)
     return out
 # ================================
-# NUMEROMANCY REPORT (STEP 1)
+# NUMEROMANCY REPORT (PREVIEW VERSION)
 # ================================
 
 @app.post("/api/numeromancy-report")
@@ -72,7 +72,21 @@ def numeromancy_report(payload: Payload):
     result = compute_number(payload.name, payload.dob)
     numeric_name = result["result"]
 
+    intro = (
+        "Your Numeric Name opens a corridor of meaning. "
+        "This preview shows three equations from the path, "
+        "with the full 55-equation report designed to lead toward C127_3434."
+    )
+
+    preview_3_equations = [
+        f"A{numeric_name}_preview",
+        f"B{numeric_name}_corridor",
+        "C127_3434"
+    ]
+
     return {
         "numeric_name": numeric_name,
-        "message": "Numeromancy endpoint is working."
+        "intro": intro,
+        "preview_3_equations": preview_3_equations,
+        "paid_report_message": "Unlock the full 55-Equation Numeromancy Report for $5 CAD."
     }
