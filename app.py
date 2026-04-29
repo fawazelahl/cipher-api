@@ -314,10 +314,51 @@ def corridor_55_debug(payload: Payload):
 async def shopify_order_paid(request: Request):
     data = await request.json()
 
+    email = data.get("email")
+    line_items = data.get("line_items", [])
+
+    # Extract properties
+    name = None
+    dob = None
+
+    for item in line_items:
+        props = item.get("properties", [])
+        for p in props:
+            if p.get("name") == "name":
+                name = p.get("value")
+            if p.get("name") == "dob":
+                dob = p.get("value")
+
+    if not name or not dob:
+        return {"status": "missing data"}
+
+    # Generate report
+    result = corridor_55_debug(
+        Payload(name=name, dob=dob)
+    )
+
+    # Prepare email content
+    equations = "\n".join(result["full_55_equations"])
+
+    message = f"""
+Hello {name},
+
+Here is your 55-Equation Numeromancy Report:
+
+{equations}
+
+Final Convergence:
+{result["final_equation"]}
+
+— The Cipher Continuum
+"""
+
+    # For now: print instead of sending email
+    print("=== SEND EMAIL TO ===", email)
+    print(message)
+
     return {
-        "received": True,
-        "message": "Shopify order webhook received.",
-        "order_id": data.get("id"),
-        "email": data.get("email"),
-        "line_items_count": len(data.get("line_items", []))
+        "status": "report generated",
+        "email": email,
+        "equations_count": len(result["full_55_equations"])
     }
