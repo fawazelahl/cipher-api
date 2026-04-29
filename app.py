@@ -107,3 +107,100 @@ def numeromancy_report(payload: Payload):
         "matching_equations_found": len(matches),
         "paid_report_message": "Unlock the full 55-Equation Numeromancy Report for $5 CAD."
     }
+    @app.post("/api/corridor-debug")
+def corridor_debug(payload: Payload):
+    try:
+        date.fromisoformat(payload.dob)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
+
+    import pandas as pd
+    from collections import deque, defaultdict
+
+    result = compute_number(payload.name, payload.dob)
+    numeric_name = result["result"]
+
+    df = pd.read_excel("Elahl_Parsed_Equations_FULL.xlsx", sheet_name=0)
+    equations = df["equation"].dropna().astype(str).tolist()
+
+    def parse_eq(eq):
+        if "_" not in eq:
+            return None
+        left, right = eq.split("_", 1)
+        main = "".join(c for c in left if c.isdigit())
+        bridge = "".join(c for c in right if c.isdigit())
+        if not main or not bridge:
+            return None
+        return {"eq": eq, "main": main, "bridge": bridge}
+
+    def family(p):
+        f = set()
+        f.add(p["main"])
+        f.add(p["main"][::-1])
+        f.add(p["bridge"])
+        f.add(p["bridge"][::-1])
+        if len(p["bridge"]) >= 3:
+            f3 = p["bridge"][:3]
+            l3 = p["bridge"][-3:]
+            f.update([f3, l3, f3[::-1], l3[::-1]])
+        return f
+
+    parsed = []
+    for eq in equations:
+        p = parse_eq(eq)
+        if p:
+            p["family"] = family(p)
+            parsed.append(p)
+
+    lookup = {p["eq"]: p for p in parsed}
+    index = defaultdict(list)
+    for p in parsed:
+        for n in p["family"]:
+            index[n].append(p["eq"])
+
+    TARGET = "C127_3434"
+
+    start_keys = {str(numeric_name), str(numeric_name)[::-1]}
+    starts = []
+    for k in start_keys:
+        starts.extend(index.get(k, []))
+
+    starts = list(dict.fromkeys(starts))
+
+    queue = deque([[s] for s in starts])
+    visited = set(starts)
+
+    path = []
+
+    while queue:
+        current_path = queue.popleft()
+        current = current_path[-1]
+
+        if current == TARGET:
+            path = current_path
+            break
+
+        if len(current_path) >= 55:
+            continue
+
+        fam = lookup.get(current, {}).get("family", set())
+
+        next_eqs = []
+        for n in fam:
+            next_eqs.extend(index.get(n, []))
+
+        next_eqs = list(dict.fromkeys(next_eqs))
+
+        for nx in next_eqs:
+            if nx not in visited:
+                visited.add(nx)
+                queue.append(current_path + [nx])
+
+    return {
+        "numeric_name": numeric_name,
+        "start_candidates": starts[:5],
+        "path_found": len(path) > 0,
+        "path_length": len(path),
+        "path_preview": path[:10],
+        "final_equation": path[-1] if path else None
+    }
