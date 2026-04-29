@@ -246,47 +246,53 @@ def compute(payload: Payload):
 
 @app.post("/api/numeromancy-report")
 def numeromancy_report(payload: Payload):
-    try:
+       try:
         date.fromisoformat(payload.dob)
-    except:
-        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
 
-    result = compute_number(payload.name, payload.dob)
-    numeric_name = result["result"]
+        result = compute_number(payload.name, payload.dob)
+        numeric_name = result["result"]
 
-    equations = load_real_equations()
+        equations = load_real_equations()
 
-    raw_path = find_path(equations, numeric_name, max_depth=55)
-    full_55 = to_55(raw_path, equations)
+        raw_path = find_path(equations, numeric_name, max_depth=55)
+        full_55 = to_55(raw_path, equations)
 
-    intro = (
-        "Your Numeric Name opens a corridor of connected equations. "
-        "This preview is drawn from the real equation library and directed toward "
-        "the final convergence: C127_3434."
-    )
+        intro = (
+            "Your Numeric Name opens a corridor of connected equations. "
+            "This preview is drawn from the real equation library and directed toward "
+            "the final convergence: C127_3434."
+        )
 
-    if not full_55:
-        num = str(numeric_name)
-        rev = num[::-1]
-        matches = [eq for eq in equations if num in eq or rev in eq]
-        preview = matches[:3] if matches else ["C127_3434"]
+        if not full_55:
+            num = str(numeric_name)
+            rev = num[::-1]
+            matches = [eq for eq in equations if num in eq or rev in eq]
+            preview = matches[:3] if matches else ["C127_3434"]
+
+            return {
+                "numeric_name": numeric_name,
+                "intro": intro,
+                "preview_3_equations": preview,
+                "path_found": False,
+                "raw_path_length": len(raw_path),
+                "debug_status": "No full 55 path created, but endpoint did not crash.",
+                "paid_report_message": "Unlock the full 55-Equation Numeromancy Report for $5 CAD."
+            }
 
         return {
             "numeric_name": numeric_name,
             "intro": intro,
-            "preview_3_equations": preview,
-            "path_found": False,
-            "raw_path_length": len(raw_path),
-            "paid_report_message": "Unlock the full 55-Equation Numeromancy Report for $5 CAD.",
+            "preview_3_equations": full_55[:3],
+            "full_55_equations": full_55,
+            "equation_count": len(full_55),
+            "final_anchor": TARGET_EQUATION,
+            "path_found": True,
+            "paid_report_message": "Unlock the full 55-Equation Numeromancy Report for $5 CAD."
         }
 
-    return {
-        "numeric_name": numeric_name,
-        "intro": intro,
-        "preview_3_equations": full_55[:3],
-        "full_55_equations": full_55,
-        "equation_count": len(full_55),
-        "final_anchor": TARGET_EQUATION,
-        "path_found": True,
-        "paid_report_message": "Unlock the full 55-Equation Numeromancy Report for $5 CAD.",
-    }
+    except Exception as e:
+        return {
+            "path_found": False,
+            "debug_error": str(e),
+            "debug_type": type(e).__name__
+        }
