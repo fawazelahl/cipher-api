@@ -32,11 +32,21 @@ def health():
 
 def compute_number(name: str, dob: str) -> dict:
     name_value = sum((ord(c.lower()) - 96) for c in name if c.isalpha())
+
+    # dob still arrives as YYYY-MM-DD from Shopify,
+    # but Numeromancy uses only month and day.
     y, m, d = map(int, dob.split("-"))
-    dob_value = (y + m + d) % 1000
+
+    numeric_name = name_value + m + d
+
     return {
-        "result": name_value + dob_value,
-        "breakdown": {"name_value": name_value, "dob_value": dob_value},
+        "result": numeric_name,
+        "breakdown": {
+            "name_value": name_value,
+            "month": m,
+            "day": d,
+            "formula": "name_value + month + day"
+        }
     }
 
 
