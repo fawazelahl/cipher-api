@@ -216,3 +216,97 @@ def corridor_debug(payload: Payload):
         "path_preview": path[:10],
         "final_equation": path[-1] if path else None,
     }
+@app.post("/api/corridor-55-debug")
+def corridor_55_debug(payload: Payload):
+    try:
+        date.fromisoformat(payload.dob)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
+
+    result = compute_number(payload.name, payload.dob)
+    numeric_name = result["result"]
+
+    equations = load_equations()
+    lookup, index = build_map(equations)
+
+    # First: find the real path to C127_3434
+    start_keys = {str(numeric_name), str(numeric_name)[::-1]}
+    starts = []
+    for key in start_keys:
+        starts.extend(index.get(key, []))
+
+    starts = list(dict.fromkeys(starts))
+
+    queue = deque([[s] for s in starts])
+    visited = set(starts)
+    path = []
+
+    while queue:
+        current_path = queue.popleft()
+        current = current_path[-1]
+
+        if current == TARGET_EQUATION:
+            path = current_path
+            break
+
+        if len(current_path) >= 55:
+            continue
+
+        fam = lookup.get(current, set())
+        next_eqs = []
+
+        for n in fam:
+            next_eqs.extend(index.get(n, []))
+
+        next_eqs = list(dict.fromkeys(next_eqs))
+
+        for nx in next_eqs:
+            if nx not in visited:
+                visited.add(nx)
+                queue.append(current_path + [nx])
+
+    if not path:
+        return {
+            "numeric_name": numeric_name,
+            "path_found": False,
+            "message": "No path to C127_3434 found."
+        }
+
+    # Second: expand path into 54 related unused equations
+    base_path = path[:-1]  # remove C127_3434 temporarily
+    expanded = list(base_path)
+    used = set(expanded)
+    i = 0
+
+    while len(expanded) < 54 and expanded:
+        current = expanded[i % len(expanded)]
+        fam = lookup.get(current, set())
+
+        candidates = []
+        for n in fam:
+            candidates.extend(index.get(n, []))
+
+        candidates = [eq for eq in dict.fromkeys(candidates) if eq not in used and eq != TARGET_EQUATION]
+
+        if candidates:
+            chosen = candidates[0]
+            expanded.append(chosen)
+            used.add(chosen)
+        else:
+            i += 1
+            if i > len(expanded) * 3:
+                break
+
+    full_55 = expanded[:54] + [TARGET_EQUATION]
+
+    return {
+        "numeric_name": numeric_name,
+        "path_found": True,
+        "original_path_length": len(path),
+        "original_path": path,
+        "equation_count": len(full_55),
+        "preview_3_equations": full_55[:3],
+        "first_10_equations": full_55[:10],
+        "full_55_equations": full_55,
+        "final_equation": full_55[-1]
+    }
