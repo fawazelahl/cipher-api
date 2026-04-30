@@ -361,13 +361,13 @@ Final Convergence:
 — The Cipher Continuum
 """
 
-send_email(
+    send_email(
     email,
     "Your 55-Equation Numeromancy Report",
     message
 )
 
-return {
+    return {
     "status": "report generated",
     "email": email,
     "equations_count": len(result["full_55_equations"])
