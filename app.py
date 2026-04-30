@@ -352,7 +352,7 @@ async def shopify_order_paid(request: Request):
     )
 
     # Prepare email content
-       equations = "\n".join(result["full_55_equations"])
+           equations = "\n".join(result["full_55_equations"])
 
     message = f"""
 Hello {name},
