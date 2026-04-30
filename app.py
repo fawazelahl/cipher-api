@@ -331,7 +331,6 @@ async def shopify_order_paid(request: Request):
     email = data.get("email")
     line_items = data.get("line_items", [])
 
-    # Extract properties
     name = None
     dob = None
 
@@ -344,15 +343,15 @@ async def shopify_order_paid(request: Request):
                 dob = p.get("value")
 
     if not name or not dob:
-        return {"status": "missing data"}
+        return {
+            "status": "missing data",
+            "email": email
+        }
 
-    # Generate report
-    result = corridor_55_debug(
-        Payload(name=name, dob=dob)
-    )
+    result = corridor_55_debug(Payload(name=name, dob=dob))
 
-    # Prepare email content
-           equations = "\n".join(result["full_55_equations"])
+    equations = "\n".join(result["full_55_equations"])
+    final_equation = result.get("final_equation", "C127_3434")
 
     message = f"""
 Hello {name},
@@ -362,7 +361,7 @@ Here is your 55-Equation Numeromancy Report:
 {equations}
 
 Final Convergence:
-{result["final_equation"]}
+{final_equation}
 
 — The Cipher Continuum
 """
@@ -374,7 +373,7 @@ Final Convergence:
     )
 
     return {
-        "status": "report generated",
+        "status": "report generated and emailed",
         "email": email,
         "equations_count": len(result["full_55_equations"])
     }
