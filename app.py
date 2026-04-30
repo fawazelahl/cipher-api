@@ -376,7 +376,7 @@ Final Convergence:
     }
 
     req = urllib.request.Request(
-        "YOUR_URL_HERE",
+        "https://script.google.com/macros/s/AKfycbypLBWYTuZFNBgSH7mH7S_m8THJU2QBxcMjX8zRVfJlDJT_O2x0Lw6lVGHf2OZ7n8T0/exec",
         data=json.dumps(payload).encode("utf-8"),
         headers={"Content-Type": "application/json"},
         method="POST"
