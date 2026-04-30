@@ -355,24 +355,20 @@ async def shopify_order_paid(request: Request):
     equations = "\n".join(result["full_55_equations"])
 
     message = f"""
-Hello {name},
-
-Here is your 55-Equation Numeromancy Report:
-
-{equations}
-
 Final Convergence:
 {result["final_equation"]}
 
 — The Cipher Continuum
 """
 
-    # For now: print instead of sending email
-    print("=== SEND EMAIL TO ===", email)
-    print(message)
+send_email(
+    email,
+    "Your 55-Equation Numeromancy Report",
+    message
+)
 
-    return {
-        "status": "report generated",
-        "email": email,
-        "equations_count": len(result["full_55_equations"])
-    }
+return {
+    "status": "report generated",
+    "email": email,
+    "equations_count": len(result["full_55_equations"])
+}
