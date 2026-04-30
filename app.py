@@ -5,7 +5,21 @@ from datetime import date
 from collections import deque, defaultdict
 import time
 import pandas as pd
+import os
+import smtplib
+from email.mime.text import MIMEText
+def send_email(to_email, subject, body):
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = os.environ["EMAIL_USER"]
+    msg["To"] = to_email
 
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(
+            os.environ["EMAIL_USER"],
+            os.environ["EMAIL_PASS"]
+        )
+        server.send_message(msg)
 ALLOWED_ORIGINS = ["https://ciphercontinuum.com", "https://theciphercontinuum.com"]
 TARGET_EQUATION = "C127_3434"
 
