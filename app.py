@@ -366,11 +366,16 @@ Final Convergence:
 — The Cipher Continuum
 """
 
-    send_email(
-        email,
-        "Your 55-Equation Numeromancy Report",
-        message
-    )
+    import requests
+
+requests.post(
+    "https://script.google.com/macros/s/AKfycbypLBWYTuZFNBgSH7mH7S_m8THJU2QBxcMjX8zRVfJlDJT_O2x0Lw6lVGHf2OZ7n8T0/exec",
+    json={
+        "to": email,
+        "subject": "Your 55-Equation Numeromancy Report",
+        "body": message
+    }
+)
 
     return {
         "status": "report generated and emailed",
