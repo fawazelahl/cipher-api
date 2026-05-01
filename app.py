@@ -353,7 +353,7 @@ async def shopify_order_paid(request: Request):
     equations = "\n".join(result["full_55_equations"])
     final_equation = result.get("final_equation", "C127_3434")
 
-message = f"""
+    message = f"""
 Hello {name},
 
 Your 55-Equation Numeromancy Report
@@ -392,7 +392,6 @@ not what it predicts.
 This report is a reflective framework for interpretation and communication.
 It does not determine outcomes or replace professional processes.
 """
-
     import urllib.request
     import json
 
