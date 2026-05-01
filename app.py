@@ -339,8 +339,13 @@ async def shopify_order_paid(request: Request):
         for p in props:
             if p.get("name") == "name":
                 name = p.get("value")
-            if p.get("name") == "dob":
-                dob = p.get("value")
+if p.get("name") == "dob" or p.get("name") == "_dob":
+    dob = p.get("value")
+
+if p.get("name") == "birth_date" and not dob:
+    birth_date = p.get("value")  # example: 08/24
+    month, day = birth_date.split("/")
+    dob = f"1990-{month}-{day}"
 
     if not name or not dob:
         return {
