@@ -353,17 +353,44 @@ async def shopify_order_paid(request: Request):
     equations = "\n".join(result["full_55_equations"])
     final_equation = result.get("final_equation", "C127_3434")
 
-    message = f"""
+message = f"""
 Hello {name},
 
-Here is your 55-Equation Numeromancy Report:
+Your 55-Equation Numeromancy Report
+
+────────────────
 
 {equations}
 
-Final Convergence:
+────────────────
+
+Final Convergence
 {final_equation}
 
+The sequence may vary,
+but the convergence remains.
+
+────────────────
+
+How to read this report
+
+Read the sequence as movement, not as isolated equations.
+Notice repetition, shifts, and return points.
+
+Do not rush to interpret.
+Let patterns emerge before assigning meaning.
+
+The convergence reflects how the sequence resolves,
+not what it predicts.
+
+────────────────
+
 — The Cipher Continuum
+
+© 2026 Fawaz Elahl
+
+This report is a reflective framework for interpretation and communication.
+It does not determine outcomes or replace professional processes.
 """
 
     import urllib.request
