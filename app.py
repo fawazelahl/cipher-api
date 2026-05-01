@@ -336,21 +336,27 @@ async def shopify_order_paid(request: Request):
 
     for item in line_items:
         props = item.get("properties", [])
-        for p in props:
-            if p.get("name") == "name":
-                name = p.get("value")
-if p.get("name") == "dob" or p.get("name") == "_dob":
-    dob = p.get("value")
 
-if p.get("name") == "birth_date" and not dob:
-    birth_date = p.get("value")  # example: 08/24
-    month, day = birth_date.split("/")
-    dob = f"1990-{month}-{day}"
+        for p in props:
+            prop_name = p.get("name")
+            prop_value = p.get("value")
+
+            if prop_name == "name":
+                name = prop_value
+
+            if prop_name == "dob" or prop_name == "_dob":
+                dob = prop_value
+
+            if prop_name == "birth_date" and not dob:
+                month, day = prop_value.split("/")
+                dob = f"1990-{month}-{day}"
 
     if not name or not dob:
         return {
             "status": "missing data",
-            "email": email
+            "email": email,
+            "name": name,
+            "dob": dob
         }
 
     result = corridor_55_debug(Payload(name=name, dob=dob))
@@ -397,6 +403,7 @@ not what it predicts.
 This report is a reflective framework for interpretation and communication.
 It does not determine outcomes or replace professional processes.
 """
+
     import urllib.request
     import json
 
@@ -414,3 +421,9 @@ It does not determine outcomes or replace professional processes.
     )
 
     urllib.request.urlopen(req)
+
+    return {
+        "status": "report generated and emailed",
+        "email": email,
+        "equations_count": len(result["full_55_equations"])
+    }
