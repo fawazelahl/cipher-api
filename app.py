@@ -324,6 +324,76 @@ def corridor_55_debug(payload: Payload):
         "full_55_equations": full_55,
         "final_equation": full_55[-1]
     }
+@app.post("/api/corridor-3-debug")
+def corridor_3_debug(payload: Payload):
+    try:
+        date.fromisoformat(payload.dob)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
+
+    result = compute_number(payload.name, payload.dob)
+    numeric_name = result["result"]
+
+    equations = load_equations()
+    lookup, index = build_map(equations)
+
+    start_keys = {str(numeric_name), str(numeric_name)[::-1]}
+    starts = []
+    for key in start_keys:
+        starts.extend(index.get(key, []))
+
+    starts = list(dict.fromkeys(starts))
+    starts = [eq for eq in starts if eq != TARGET_EQUATION]
+
+    def build_55_from_start(start_eq):
+        base_path = [start_eq]
+        expanded = list(base_path)
+        used = set(expanded)
+        i = 0
+
+        while len(expanded) < 54 and expanded:
+            current = expanded[i % len(expanded)]
+            fam = lookup.get(current, set())
+
+            candidates = []
+            for n in fam:
+                candidates.extend(index.get(n, []))
+
+            candidates = [
+                eq for eq in dict.fromkeys(candidates)
+                if eq not in used and eq != TARGET_EQUATION
+            ]
+
+            if candidates:
+                chosen = candidates[0]
+                expanded.append(chosen)
+                used.add(chosen)
+            else:
+                i += 1
+                if i > len(expanded) * 3:
+                    break
+
+        full_55 = expanded[:54] + [TARGET_EQUATION]
+
+        return {
+            "start_equation": start_eq,
+            "equation_count": len(full_55),
+            "preview_3_equations": full_55[:3],
+            "first_10_equations": full_55[:10],
+            "full_55_equations": full_55,
+            "final_equation": full_55[-1]
+        }
+
+    corridors = []
+    for start in starts[:3]:
+        corridors.append(build_55_from_start(start))
+
+    return {
+        "numeric_name": numeric_name,
+        "start_candidates": starts[:10],
+        "corridor_count": len(corridors),
+        "corridors": corridors
+    }
 @app.post("/api/shopify-order-paid")
 async def shopify_order_paid(request: Request):
     data = await request.json()
