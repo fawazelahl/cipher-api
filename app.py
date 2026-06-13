@@ -394,6 +394,52 @@ def corridor_3_debug(payload: Payload):
         "corridor_count": len(corridors),
         "corridors": corridors
     }
+@app.post("/api/archive-mine-debug")
+def archive_mine_debug(payload: Payload):
+    try:
+        date.fromisoformat(payload.dob)
+    except:
+        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
+
+    result = corridor_3_debug(payload)
+
+    mined = []
+
+    for idx, corridor in enumerate(result["corridors"], start=1):
+        equations = corridor["full_55_equations"]
+
+        digit_families = defaultdict(int)
+
+        for eq in equations:
+            p = parse_eq(eq)
+            if not p:
+                continue
+
+            fam = family_of(p)
+
+            for n in fam:
+                digit_families[n] += 1
+
+        top_families = sorted(
+            digit_families.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:12]
+
+        mined.append({
+            "corridor": idx,
+            "start_equation": corridor["start_equation"],
+            "preview_3_equations": corridor["preview_3_equations"],
+            "top_digit_families": top_families,
+            "final_equation": corridor["final_equation"]
+        })
+
+    return {
+        "numeric_name": result["numeric_name"],
+        "corridor_count": result["corridor_count"],
+        "mining_note": "Top digit families show which number-neighborhoods dominate each corridor.",
+        "corridors": mined
+    }
 @app.post("/api/shopify-order-paid")
 async def shopify_order_paid(request: Request):
     data = await request.json()
