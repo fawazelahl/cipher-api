@@ -157,9 +157,9 @@ def numeromancy_report(payload: Payload):
     result = corridor_55_debug(payload)
 
     intro = (
-        "Your Numeric Name opens a corridor of connected equations. "
-        "The first three equations begin your preview in sequence. "
-        "The full 55-equation report leads toward the final convergence: C127_3434."
+        "Your Numeric Name has generated three preview corridors. "
+"The equations below are the first steps of your pathway. "
+"The complete report contains 55 equations leading toward the final convergence: C127_3434."
     )
 
     return {
