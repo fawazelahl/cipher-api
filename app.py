@@ -475,57 +475,148 @@ async def shopify_order_paid(request: Request):
             "dob": dob
         }
 
-    result = corridor_55_debug(Payload(name=name, dob=dob))
+    result = corridor_3_debug(Payload(name=name, dob=dob))
 
-    equations = "\n".join(result["full_55_equations"])
-    final_equation = result.get("final_equation", "C127_3434")
+    corridors = result.get("corridors", [])
+    numeric_name = result.get("numeric_name")
+
+    if len(corridors) != 3:
+        return {
+            "status": "qc_required",
+            "reason": "Expected 3 corridors",
+            "email": email,
+            "name": name,
+            "dob": dob,
+            "numeric_name": numeric_name,
+            "corridor_count": len(corridors)
+        }
+
+    corridor_sections = []
+    total_equations = 0
+
+    for idx, corridor in enumerate(corridors, start=1):
+        equations = corridor.get("full_55_equations", [])
+
+        if len(equations) != 55:
+            return {
+                "status": "qc_required",
+                "reason": f"Corridor {idx} does not contain 55 equations",
+                "email": email,
+                "name": name,
+                "dob": dob,
+                "numeric_name": numeric_name,
+                "corridor": idx,
+                "equation_count": len(equations)
+            }
+
+        total_equations += len(equations)
+
+        corridor_text = "\n".join(equations)
+
+        corridor_sections.append(
+            f"""
+CORRIDOR {idx}
+Start Equation: {corridor.get("start_equation")}
+Equation Count: {len(equations)}
+
+{corridor_text}
+
+Final Equation:
+{corridor.get("final_equation")}
+"""
+        )
+
+    if total_equations != 165:
+        return {
+            "status": "qc_required",
+            "reason": "Expected 165 total equations",
+            "email": email,
+            "name": name,
+            "dob": dob,
+            "numeric_name": numeric_name,
+            "equations_count": total_equations
+        }
+
+    all_corridors_text = "\n".join(corridor_sections)
 
     message = f"""
-Hello {name},
-
-Your 55-Equation Numeromancy Report
-
-────────────────
-
-{equations}
+NUMEROMANCY PRODUCTION SYSTEM v1.0
+QUALITY-CONTROL PACKET
 
 ────────────────
 
-Final Convergence
-{final_equation}
+Customer Name:
+{name}
 
-The sequence may vary,
-but the convergence remains.
+Customer Email:
+{email}
+
+Date of Birth:
+{dob}
+
+Numeric Name:
+{numeric_name}
+
+Corridor Families:
+3
+
+Equations per Corridor:
+55
+
+Total Equations:
+165
 
 ────────────────
 
-How to read this report
-
-Read the sequence as movement, not as isolated equations.
-Notice repetition, shifts, and return points.
-
-Do not rush to interpret.
-Let patterns emerge before assigning meaning.
-
-The convergence reflects how the sequence resolves,
-not what it predicts.
+{all_corridors_text}
 
 ────────────────
 
-— The Cipher Continuum
+QUALITY-CONTROL PAUSE
+
+Verify before customer delivery:
+
+1. Customer name
+2. Numeric Name
+3. Three corridor families
+4. Fifty-five equations per corridor
+5. One hundred sixty-five total equations
+6. Final convergence
+7. Manuscript variable replacement
+8. Cover personalization
+9. Digital PDF
+10. Print-ready PDF
+
+DO NOT DELIVER TO CUSTOMER
+until final manuscript QC is approved.
+
+────────────────
+
+The Cipher Continuum
+Numeromancy Production System v1.0
 
 © 2026 Fawaz Elahl
-
-This report is a reflective framework for interpretation and communication.
-It does not determine outcomes or replace professional processes.
 """
 
     import urllib.request
     import json
 
+    qc_email = os.environ.get("EMAIL_USER")
+
+    if not qc_email:
+        return {
+            "status": "165 equations generated - qc email not configured",
+            "customer_email": email,
+            "name": name,
+            "dob": dob,
+            "numeric_name": numeric_name,
+            "corridor_count": len(corridors),
+            "equations_count": total_equations
+        }
+
     payload = {
-        "to": email,
-        "subject": "Your 55-Equation Numeromancy Report",
+        "to": qc_email,
+        "subject": f"Numeromancy QC — {name} — Numeric Name {numeric_name}",
         "body": message
     }
 
@@ -539,7 +630,16 @@ It does not determine outcomes or replace professional processes.
     urllib.request.urlopen(req)
 
     return {
-        "status": "report generated and emailed",
-        "email": email,
-        "equations_count": len(result["full_55_equations"])
+        "status": "165 equations generated - awaiting qc",
+        "customer_email": email,
+        "qc_email": qc_email,
+        "name": name,
+        "dob": dob,
+        "numeric_name": numeric_name,
+        "corridor_count": len(corridors),
+        "equations_count": total_equations,
+        "final_equations": [
+            corridor.get("final_equation")
+            for corridor in corridors
+        ]
     }
