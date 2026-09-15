@@ -1,0 +1,41 @@
+name: Cover Builder Laboratory
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-cover:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Pillow
+        run: pip install Pillow
+
+      - name: Generate Laura Bennett test cover
+        run: |
+          python - <<'PY'
+          from cover_builder import build_cover
+
+          result = build_cover(
+              "Laura Bennett",
+              159,
+              9003,
+              "Laura_Bennett_Cover_9003.png"
+          )
+
+          print(result)
+          PY
+
+      - name: Save test cover
+        uses: actions/upload-artifact@v4
+        with:
+          name: Laura-Bennett-Cover-9003
+          path: Laura_Bennett_Cover_9003.png
