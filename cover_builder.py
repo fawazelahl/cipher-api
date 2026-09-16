@@ -65,7 +65,7 @@ def validate_output_path(output_path):
             )
         return output_path
 def build_cover(customer_name, numeric_name, manuscript_number, output_path):
-        data = validate_cover_data(customer_name, numeric_name, manuscript_number)
+    data = validate_cover_data(customer_name, numeric_name, manuscript_number)
     background_path = validate_background()
 output_path = validate_output_path(output_path)
 from PIL import Image, ImageDraw, ImageFont
