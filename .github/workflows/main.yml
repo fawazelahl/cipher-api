@@ -19,16 +19,16 @@ jobs:
       - name: Install Pillow
         run: pip install Pillow
 
-      - name: Generate Laura Bennett test cover
+      - name: Generate long-name stress test cover
         run: |
           python - <<'PY'
           from cover_builder import build_cover
 
           result = build_cover(
-              "Laura Bennett",
+              "Alexander Christopher Montgomery",
               159,
-              9003,
-              "Laura_Bennett_Cover_9003.png"
+              9004,
+              "Alexander_Montgomery_Cover_9004.png"
           )
 
           print(result)
@@ -37,5 +37,5 @@ jobs:
       - name: Save test cover
         uses: actions/upload-artifact@v4
         with:
-          name: Laura-Bennett-Cover-9003
-          path: Laura_Bennett_Cover_9003.png
+          name: Alexander-Montgomery-Cover-9004
+          path: Alexander_Montgomery_Cover_9004.png
