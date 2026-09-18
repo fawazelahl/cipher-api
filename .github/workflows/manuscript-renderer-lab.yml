@@ -50,38 +50,72 @@ jobs:
           print("canonical template found: PASS")
           print("template structure: PASS")
           print("MANUSCRIPT RENDERER COMPONENT CHECK: PASSED")
-          
+          PY
 
-      print("=== ACTUAL MANUSCRIPT RENDER TEST ===")
-      engine_result = {
-      }
-      import json
-      from urllib.request import Request, urlopen
-      payload = json.dumps({"name": "Laura Bennett", "dob": "1990-04-22"}).encode("utf-8")
-      request = Request("https://cipher-api-txyc.onrender.com/api/corridor-3-debug", data=payload, headers={"Content-Type": "application/json"}, method="POST")
-      engine_result = json.loads(urlopen(request, timeout=120).read().decode("utf-8"))
-      print(f"Live engine numeric name: {engine_result.get('numeric_name')}")
-      print(f"Live engine corridors: {len(engine_result.get('corridors', []))}")
-      if engine_result.get("numeric_name") != 159:
-          raise ValueError(f"LAB FAILED: expected Laura numeric name 159, received {engine_result.get('numeric_name')}")
-      if len(engine_result.get("corridors", [])) != 3:
-          raise ValueError(f"LAB FAILED: expected 3 corridors, received {len(engine_result.get('corridors', []))}")
-      output_path = Path("Numeromancy_Lab_Laura_Bennett_9003.docx")
-      render_result = manuscript_builder.render_manuscript(
-      template,
-      output_path,
-      "Laura Bennett",
-      "1990-04-22",
-      "9003",
-      engine_result,
-      )
-      print(render_result)
-      if not output_path.is_file():
-          raise FileNotFoundError(f"LAB FAILED: rendered manuscript was not created: {output_path}")
-      print(f"ACTUAL MANUSCRIPT RENDER: PASSED — {output_path}")
-      PY
-        - name: Upload rendered manuscript
-            uses: actions/upload-artifact@v4
-            with:
-              name: Laura-Bennett-Manuscript-9003
-              path: Numeromancy_Lab_Laura_Bennett_9003.docx
+      - name: Run actual manuscript render test
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          from urllib.request import Request, urlopen
+          import manuscript_builder
+
+          template = Path("_Numeromancy Manuscript.docx")
+
+          print("=== ACTUAL MANUSCRIPT RENDER TEST ===")
+
+          payload = json.dumps({
+              "name": "Laura Bennett",
+              "dob": "1990-04-22"
+          }).encode("utf-8")
+
+          request = Request(
+              "https://cipher-api-txyc.onrender.com/api/corridor-3-debug",
+              data=payload,
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+
+          engine_result = json.loads(
+              urlopen(request, timeout=120).read().decode("utf-8")
+          )
+
+          print(f"Live engine numeric name: {engine_result.get('numeric_name')}")
+          print(f"Live engine corridors: {len(engine_result.get('corridors', []))}")
+
+          if engine_result.get("numeric_name") != 159:
+              raise ValueError(
+                  f"LAB FAILED: expected Laura numeric name 159, received {engine_result.get('numeric_name')}"
+              )
+
+          if len(engine_result.get("corridors", [])) != 3:
+              raise ValueError(
+                  f"LAB FAILED: expected 3 corridors, received {len(engine_result.get('corridors', []))}"
+              )
+
+          output_path = Path("Numeromancy_Lab_Laura_Bennett_9003.docx")
+
+          render_result = manuscript_builder.render_manuscript(
+              template,
+              output_path,
+              "Laura Bennett",
+              "1990-04-22",
+              "9003",
+              engine_result,
+          )
+
+          print(render_result)
+
+          if not output_path.is_file():
+              raise FileNotFoundError(
+                  f"LAB FAILED: rendered manuscript was not created: {output_path}"
+              )
+
+          print(f"ACTUAL MANUSCRIPT RENDER: PASSED — {output_path}")
+          PY
+
+      - name: Upload rendered manuscript
+        uses: actions/upload-artifact@v4
+        with:
+          name: Laura-Bennett-Manuscript-9003
+          path: Numeromancy_Lab_Laura_Bennett_9003.docx
