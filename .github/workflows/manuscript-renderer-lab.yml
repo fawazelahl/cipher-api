@@ -1,0 +1,53 @@
+name: Manuscript Renderer Laboratory
+
+on:
+  workflow_dispatch:
+
+jobs:
+  manuscript-renderer-lab:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Verify Manuscript Renderer components
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from docx import Document
+          import manuscript_builder
+
+          template = Path("_Numeromancy Manuscript.docx")
+
+          if not template.is_file():
+              raise FileNotFoundError(
+                  f"Canonical manuscript template not found: {template}"
+              )
+
+          document = Document(template)
+
+          print("=== MANUSCRIPT RENDERER LABORATORY ===")
+          print(f"Template: {template}")
+          print(f"Paragraph count: {len(document.paragraphs)}")
+          print(f"Expected paragraph count: {manuscript_builder.EXPECTED_TEMPLATE_PARAGRAPHS}")
+
+          if len(document.paragraphs) != manuscript_builder.EXPECTED_TEMPLATE_PARAGRAPHS:
+              raise ValueError(
+                  "LAB FAILED: canonical template paragraph count does not match renderer."
+              )
+
+          print("python-docx import: PASS")
+          print("manuscript_builder import: PASS")
+          print("canonical template found: PASS")
+          print("template structure: PASS")
+          print("MANUSCRIPT RENDERER COMPONENT CHECK: PASSED")
+          PY
