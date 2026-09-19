@@ -1,0 +1,114 @@
+name: DOCX to PDF Laboratory
+
+on:
+  workflow_dispatch:
+
+jobs:
+  docx-to-pdf-lab:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install LibreOffice
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libreoffice
+
+      - name: Render personalized DOCX
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          from urllib.request import Request, urlopen
+          import manuscript_builder
+
+          template = Path("_Numeromancy Manuscript.docx")
+          output_path = Path("Numeromancy_Lab_Laura_Bennett_9003.docx")
+
+          payload = json.dumps({
+              "name": "Laura Bennett",
+              "dob": "1990-04-22"
+          }).encode("utf-8")
+
+          request = Request(
+              "https://cipher-api-txyc.onrender.com/api/corridor-3-debug",
+              data=payload,
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+
+          engine_result = json.loads(
+              urlopen(request, timeout=120).read().decode("utf-8")
+          )
+
+          manuscript_builder.render_manuscript(
+              template,
+              output_path,
+              "Laura Bennett",
+              "1990-04-22",
+              "9003",
+              engine_result,
+          )
+
+          if not output_path.is_file():
+              raise FileNotFoundError(
+                  f"Personalized DOCX was not created: {output_path}"
+              )
+
+          print(f"PERSONALIZED DOCX: PASSED — {output_path}")
+          PY
+
+      - name: Convert DOCX to PDF
+        run: |
+          mkdir -p pdf-output
+
+          libreoffice \
+            --headless \
+            --convert-to pdf \
+            --outdir pdf-output \
+            Numeromancy_Lab_Laura_Bennett_9003.docx
+
+          test -f pdf-output/Numeromancy_Lab_Laura_Bennett_9003.pdf
+
+          echo "DOCX TO PDF CONVERSION: PASSED"
+
+      - name: Verify 29-page manuscript PDF
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from pypdf import PdfReader
+
+          pdf_path = Path(
+              "pdf-output/Numeromancy_Lab_Laura_Bennett_9003.pdf"
+          )
+
+          reader = PdfReader(pdf_path)
+          page_count = len(reader.pages)
+
+          print(f"PDF: {pdf_path}")
+          print(f"Page count: {page_count}")
+          print("Expected page count: 29")
+
+          if page_count != 29:
+              raise ValueError(
+                  f"LAB FAILED: expected 29 manuscript pages, got {page_count}."
+              )
+
+          print("29-PAGE PDF QC: PASSED")
+          PY
+
+      - name: Upload rendered PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: Laura-Bennett-Manuscript-PDF-9003
+          path: pdf-output/Numeromancy_Lab_Laura_Bennett_9003.pdf
