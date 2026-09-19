@@ -1,0 +1,221 @@
+name: Final Automated Delivery Laboratory
+
+on:
+  workflow_dispatch:
+
+jobs:
+  automated-delivery-lab:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install LibreOffice
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libreoffice
+
+      - name: Run engine and render personalized DOCX
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          from urllib.request import Request, urlopen
+
+          import manuscript_builder
+
+          print("=== FINAL AUTOMATED DELIVERY LABORATORY ===")
+          print("Stage 1: Live engine")
+
+          payload = json.dumps({
+              "name": "Laura Bennett",
+              "dob": "1990-04-22"
+          }).encode("utf-8")
+
+          request = Request(
+              "https://cipher-api-txyc.onrender.com/api/corridor-3-debug",
+              data=payload,
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+
+          engine_result = json.loads(
+              urlopen(request, timeout=120).read().decode("utf-8")
+          )
+
+          if engine_result.get("numeric_name") != 159:
+              raise ValueError(
+                  f"LAB FAILED: expected numeric name 159, got "
+                  f"{engine_result.get('numeric_name')}"
+              )
+
+          if len(engine_result.get("corridors", [])) != 3:
+              raise ValueError(
+                  "LAB FAILED: engine did not return exactly 3 corridors."
+              )
+
+          print("Live engine: PASSED")
+
+          print("Stage 2: Engine QC")
+          qc_result = manuscript_builder.validate_engine_result(engine_result)
+          print(qc_result)
+          print("Engine QC: PASSED")
+
+          print("Stage 3: Personalized manuscript renderer")
+
+          template_path = Path("_Numeromancy Manuscript.docx")
+          docx_path = Path("Numeromancy_Final_Lab_Laura_Bennett_9005.docx")
+
+          render_result = manuscript_builder.render_manuscript(
+              template_path,
+              docx_path,
+              "Laura Bennett",
+              "1990-04-22",
+              "9005",
+              engine_result,
+          )
+
+          print(render_result)
+
+          if not docx_path.is_file():
+              raise FileNotFoundError(
+                  f"LAB FAILED: personalized DOCX not found: {docx_path}"
+              )
+
+          print("Personalized DOCX: PASSED")
+          PY
+
+      - name: Convert personalized DOCX to PDF
+        run: |
+          mkdir -p pdf-output
+
+          libreoffice \
+            --headless \
+            --convert-to pdf \
+            --outdir pdf-output \
+            Numeromancy_Final_Lab_Laura_Bennett_9005.docx
+
+          test -f pdf-output/Numeromancy_Final_Lab_Laura_Bennett_9005.pdf
+
+          echo "DOCX TO PDF CONVERSION: PASSED"
+
+      - name: Verify 29-page manuscript PDF
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from pypdf import PdfReader
+
+          pdf_path = Path(
+              "pdf-output/Numeromancy_Final_Lab_Laura_Bennett_9005.pdf"
+          )
+
+          reader = PdfReader(pdf_path)
+          page_count = len(reader.pages)
+
+          print(f"Manuscript PDF: {pdf_path}")
+          print(f"Page count: {page_count}")
+          print("Expected page count: 29")
+
+          if page_count != 29:
+              raise ValueError(
+                  f"LAB FAILED: expected 29 manuscript pages, got {page_count}."
+              )
+
+          print("29-PAGE MANUSCRIPT PDF QC: PASSED")
+          PY
+
+      - name: Build personalized cover
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import cover_builder
+
+          cover_path = Path("Numeromancy_Final_Lab_Cover_9005.png")
+
+          cover_builder.build_cover(
+              "Laura Bennett",
+              159,
+              "9005",
+              cover_path,
+          )
+
+          if not cover_path.is_file():
+              raise FileNotFoundError(
+                  f"LAB FAILED: cover not found: {cover_path}"
+              )
+
+          print(f"Cover: {cover_path}")
+          print("COVER BUILDER: PASSED")
+          PY
+
+      - name: Assemble final 30-page PDF
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import pdf_builder
+
+          cover_path = Path("Numeromancy_Final_Lab_Cover_9005.png")
+          manuscript_pdf = Path(
+              "pdf-output/Numeromancy_Final_Lab_Laura_Bennett_9005.pdf"
+          )
+          final_pdf = Path(
+              "Numeromancy_Final_Automated_Delivery_Lab_9005.pdf"
+          )
+
+          result = pdf_builder.assemble_final_pdf(
+              cover_path,
+              manuscript_pdf,
+              final_pdf,
+          )
+
+          print(result)
+
+          if not final_pdf.is_file():
+              raise FileNotFoundError(
+                  f"LAB FAILED: final PDF not found: {final_pdf}"
+              )
+
+          print("PDF ASSEMBLY: PASSED")
+          PY
+
+      - name: Final 30-page delivery QC
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from pypdf import PdfReader
+
+          final_pdf = Path(
+              "Numeromancy_Final_Automated_Delivery_Lab_9005.pdf"
+          )
+
+          reader = PdfReader(final_pdf)
+          page_count = len(reader.pages)
+
+          print("=== FINAL DELIVERY QC ===")
+          print(f"Final PDF: {final_pdf}")
+          print(f"Page count: {page_count}")
+          print("Expected page count: 30")
+
+          if page_count != 30:
+              raise ValueError(
+                  f"LAB FAILED: expected 30 final pages, got {page_count}."
+              )
+
+          print("FINAL 30-PAGE PDF QC: PASSED")
+          print("FINAL AUTOMATED-DELIVERY LAB TEST: PASSED")
+          PY
+
+      - name: Upload final automated-delivery PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: Final-Automated-Delivery-Lab-9005
+          path: Numeromancy_Final_Automated_Delivery_Lab_9005.pdf
