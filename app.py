@@ -606,7 +606,7 @@ Numeromancy Production System v1.0
     import urllib.request
     import json
 
-    qc_email = os.environ.get("EMAIL_USER")
+        qc_email = os.environ.get("EMAIL_USER")
 
     if not qc_email:
         print("SHOPIFY BRANCH: qc email not configured", flush=True)
@@ -620,21 +620,14 @@ Numeromancy Production System v1.0
             "equations_count": total_equations
         }
 
-    payload = {
-        "to": qc_email,
-        "subject": f"Numeromancy QC — {name} — Numeric Name {numeric_name}",
-        "body": message
-    }
-
-    req = urllib.request.Request(
-        "https://script.google.com/macros/s/AKfycbypLBWYTuZFNBgSH7mH7S_m8THJU2QBxcMjX8zRVfJlDJT_O2x0Lw6lVGHf2OZ7n8T0/exec",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST"
+    send_email(
+        qc_email,
+        f"Numeromancy QC — {name} — Numeric Name {numeric_name}",
+        message
     )
 
-    urllib.request.urlopen(req)
-    print("SHOPIFY BRANCH: QC email request completed", flush=True)
+    print("SHOPIFY BRANCH: QC email sent", flush=True)
+
     return {
         "status": "165 equations generated - awaiting qc",
         "customer_email": email,
