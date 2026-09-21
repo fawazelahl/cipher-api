@@ -443,6 +443,7 @@ def archive_mine_debug(payload: Payload):
 @app.post("/api/shopify-order-paid")
 async def shopify_order_paid(request: Request):
     data = await request.json()
+    print("SHOPIFY DEBUG:", "email=", data.get("email"), "properties=", [item.get("properties", []) for item in data.get("line_items", [])], flush=True)
 
     email = data.get("email")
     line_items = data.get("line_items", [])
