@@ -469,6 +469,7 @@ async def shopify_order_paid(request: Request):
                 dob = f"1990-{month}-{day}"
 
     if not name or not dob:
+        print("SHOPIFY BRANCH: missing data", "name=", name, "dob=", dob, flush=True)
         return {
             "status": "missing data",
             "email": email,
@@ -482,6 +483,7 @@ async def shopify_order_paid(request: Request):
     numeric_name = result.get("numeric_name")
 
     if len(corridors) != 3:
+        print("SHOPIFY BRANCH: corridor count failure", "count=", len(corridors), flush=True)
         return {
             "status": "qc_required",
             "reason": "Expected 3 corridors",
@@ -499,6 +501,7 @@ async def shopify_order_paid(request: Request):
         equations = corridor.get("full_55_equations", [])
 
         if len(equations) != 55:
+            print("SHOPIFY BRANCH: equation count failure", "corridor=", idx, "count=", len(equations), flush=True)
             return {
                 "status": "qc_required",
                 "reason": f"Corridor {idx} does not contain 55 equations",
@@ -528,6 +531,7 @@ Final Equation:
         )
 
     if total_equations != 165:
+        print("SHOPIFY BRANCH: total equation failure", "total=", total_equations, flush=True)
         return {
             "status": "qc_required",
             "reason": "Expected 165 total equations",
@@ -605,6 +609,7 @@ Numeromancy Production System v1.0
     qc_email = os.environ.get("EMAIL_USER")
 
     if not qc_email:
+        print("SHOPIFY BRANCH: qc email not configured", flush=True)
         return {
             "status": "165 equations generated - qc email not configured",
             "customer_email": email,
@@ -629,7 +634,7 @@ Numeromancy Production System v1.0
     )
 
     urllib.request.urlopen(req)
-
+    print("SHOPIFY BRANCH: QC email request completed", flush=True)
     return {
         "status": "165 equations generated - awaiting qc",
         "customer_email": email,
