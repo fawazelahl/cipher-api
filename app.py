@@ -633,8 +633,8 @@ req = urllib.request.Request(
     method="POST"
 )
 
-with urllib.request.urlopen(req, timeout=30) as response:
-    response.read()
+    with urllib.request.urlopen(req, timeout=30) as response:
+        response.read()
 
     print("SHOPIFY BRANCH: QC email sent", flush=True)
 
@@ -647,6 +647,11 @@ with urllib.request.urlopen(req, timeout=30) as response:
         "numeric_name": numeric_name,
         "corridor_count": len(corridors),
         "equations_count": total_equations,
+        "final_equations": [
+            corridor.get("final_equation")
+            for corridor in corridors
+        ]
+    }
         "final_equations": [
             corridor.get("final_equation")
             for corridor in corridors
