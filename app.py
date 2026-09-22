@@ -620,18 +620,18 @@ Numeromancy Production System v1.0
             "equations_count": total_equations
         }
 
-    payload = {
-    "to": qc_email,
-    "subject": f"Numeromancy QC — {name} — Numeric Name {numeric_name}",
-    "body": message
-}
+        payload = {
+        "to": qc_email,
+        "subject": f"Numeromancy QC — {name} — Numeric Name {numeric_name}",
+        "body": message
+    }
 
-req = urllib.request.Request(
-    "https://script.google.com/macros/s/AKfycbypLBWYTuZFNBgSH7mH7S_m8THJU2QBxcMjX8zRVfJlDJT_O2x0Lw6lVGHf2OZ7n8T0/exec",
-    data=json.dumps(payload).encode("utf-8"),
-    headers={"Content-Type": "application/json"},
-    method="POST"
-)
+    req = urllib.request.Request(
+        "https://script.google.com/macros/s/AKfycbypLBWYTuZFNBgSH7mH7S_m8THJU2QBxcMjX8zRVfJlDJT_O2x0Lw6lVGHf2OZ7n8T0/exec",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
 
     with urllib.request.urlopen(req, timeout=30) as response:
         response.read()
@@ -647,11 +647,6 @@ req = urllib.request.Request(
         "numeric_name": numeric_name,
         "corridor_count": len(corridors),
         "equations_count": total_equations,
-        "final_equations": [
-            corridor.get("final_equation")
-            for corridor in corridors
-        ]
-    }
         "final_equations": [
             corridor.get("final_equation")
             for corridor in corridors
