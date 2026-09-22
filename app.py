@@ -620,7 +620,7 @@ Numeromancy Production System v1.0
             "equations_count": total_equations
         }
 
-        payload = {
+            payload = {
         "to": qc_email,
         "subject": f"Numeromancy QC — {name} — Numeric Name {numeric_name}",
         "body": message
