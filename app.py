@@ -606,7 +606,7 @@ Numeromancy Production System v1.0
     import urllib.request
     import json
 
-        qc_email = os.environ.get("EMAIL_USER")
+    qc_email = os.environ.get("EMAIL_USER")
 
     if not qc_email:
         print("SHOPIFY BRANCH: qc email not configured", flush=True)
