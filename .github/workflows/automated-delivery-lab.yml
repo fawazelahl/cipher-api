@@ -2,10 +2,28 @@ name: Final Automated Delivery Laboratory
 
 on:
   workflow_dispatch:
+    inputs:
+      name:
+        description: "Customer name"
+        required: true
+        default: "Laura Bennett"
+      dob:
+        description: "Date of birth (YYYY-MM-DD)"
+        required: true
+        default: "1990-04-22"
+      manuscript_number:
+        description: "Manuscript number"
+        required: true
+        default: "9005"
 
 jobs:
   automated-delivery-lab:
     runs-on: ubuntu-latest
+
+    env:
+      CUSTOMER_NAME: ${{ inputs.name }}
+      CUSTOMER_DOB: ${{ inputs.dob }}
+      MANUSCRIPT_NUMBER: ${{ inputs.manuscript_number }}
 
     steps:
       - name: Check out repository
@@ -29,16 +47,21 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           import json
+          import os
           from urllib.request import Request, urlopen
 
           import manuscript_builder
+
+          customer_name = os.environ["CUSTOMER_NAME"]
+          customer_dob = os.environ["CUSTOMER_DOB"]
+          manuscript_number = os.environ["MANUSCRIPT_NUMBER"]
 
           print("=== FINAL AUTOMATED DELIVERY LABORATORY ===")
           print("Stage 1: Live engine")
 
           payload = json.dumps({
-              "name": "Laura Bennett",
-              "dob": "1990-04-22"
+              "name": customer_name,
+              "dob": customer_dob
           }).encode("utf-8")
 
           request = Request(
@@ -52,10 +75,11 @@ jobs:
               urlopen(request, timeout=120).read().decode("utf-8")
           )
 
-          if engine_result.get("numeric_name") != 159:
+          numeric_name = engine_result.get("numeric_name")
+
+          if numeric_name is None:
               raise ValueError(
-                  f"LAB FAILED: expected numeric name 159, got "
-                  f"{engine_result.get('numeric_name')}"
+                  "LAB FAILED: engine did not return a numeric name."
               )
 
           if len(engine_result.get("corridors", [])) != 3:
@@ -73,14 +97,16 @@ jobs:
           print("Stage 3: Personalized manuscript renderer")
 
           template_path = Path("_Numeromancy Manuscript.docx")
-          docx_path = Path("Numeromancy_Final_Lab_Laura_Bennett_9005.docx")
+          docx_path = Path(
+              f"Numeromancy_Final_Lab_{manuscript_number}.docx"
+          )
 
           render_result = manuscript_builder.render_manuscript(
               template_path,
               docx_path,
-              "Laura Bennett",
-              "1990-04-22",
-              "9005",
+              customer_name,
+              customer_dob,
+              manuscript_number,
               engine_result,
           )
 
@@ -102,9 +128,9 @@ jobs:
             --headless \
             --convert-to pdf \
             --outdir pdf-output \
-            Numeromancy_Final_Lab_Laura_Bennett_9005.docx
+            "Numeromancy_Final_Lab_${MANUSCRIPT_NUMBER}.docx"
 
-          test -f pdf-output/Numeromancy_Final_Lab_Laura_Bennett_9005.pdf
+          test -f "pdf-output/Numeromancy_Final_Lab_${MANUSCRIPT_NUMBER}.pdf"
 
           echo "DOCX TO PDF CONVERSION: PASSED"
 
@@ -112,10 +138,13 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import os
           from pypdf import PdfReader
 
+          manuscript_number = os.environ["MANUSCRIPT_NUMBER"]
+
           pdf_path = Path(
-              "pdf-output/Numeromancy_Final_Lab_Laura_Bennett_9005.pdf"
+              f"pdf-output/Numeromancy_Final_Lab_{manuscript_number}.pdf"
           )
 
           reader = PdfReader(pdf_path)
@@ -137,14 +166,42 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import json
+          import os
+          from urllib.request import Request, urlopen
+
           import cover_builder
 
-          cover_path = Path("Numeromancy_Final_Lab_Cover_9005.png")
+          customer_name = os.environ["CUSTOMER_NAME"]
+          customer_dob = os.environ["CUSTOMER_DOB"]
+          manuscript_number = os.environ["MANUSCRIPT_NUMBER"]
+
+          payload = json.dumps({
+              "name": customer_name,
+              "dob": customer_dob
+          }).encode("utf-8")
+
+          request = Request(
+              "https://cipher-api-txyc.onrender.com/api/corridor-3-debug",
+              data=payload,
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+
+          engine_result = json.loads(
+              urlopen(request, timeout=120).read().decode("utf-8")
+          )
+
+          numeric_name = engine_result["numeric_name"]
+
+          cover_path = Path(
+              f"Numeromancy_Final_Lab_Cover_{manuscript_number}.png"
+          )
 
           cover_builder.build_cover(
-              "Laura Bennett",
-              159,
-              "9005",
+              customer_name,
+              numeric_name,
+              manuscript_number,
               cover_path,
           )
 
@@ -161,14 +218,21 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import os
           import pdf_builder
 
-          cover_path = Path("Numeromancy_Final_Lab_Cover_9005.png")
-          manuscript_pdf = Path(
-              "pdf-output/Numeromancy_Final_Lab_Laura_Bennett_9005.pdf"
+          manuscript_number = os.environ["MANUSCRIPT_NUMBER"]
+
+          cover_path = Path(
+              f"Numeromancy_Final_Lab_Cover_{manuscript_number}.png"
           )
+
+          manuscript_pdf = Path(
+              f"pdf-output/Numeromancy_Final_Lab_{manuscript_number}.pdf"
+          )
+
           final_pdf = Path(
-              "Numeromancy_Final_Automated_Delivery_Lab_9005.pdf"
+              f"Numeromancy_Final_Automated_Delivery_Lab_{manuscript_number}.pdf"
           )
 
           result = pdf_builder.assemble_final_pdf(
@@ -191,10 +255,13 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import os
           from pypdf import PdfReader
 
+          manuscript_number = os.environ["MANUSCRIPT_NUMBER"]
+
           final_pdf = Path(
-              "Numeromancy_Final_Automated_Delivery_Lab_9005.pdf"
+              f"Numeromancy_Final_Automated_Delivery_Lab_{manuscript_number}.pdf"
           )
 
           reader = PdfReader(final_pdf)
@@ -217,5 +284,5 @@ jobs:
       - name: Upload final automated-delivery PDF
         uses: actions/upload-artifact@v4
         with:
-          name: Final-Automated-Delivery-Lab-9005
-          path: Numeromancy_Final_Automated_Delivery_Lab_9005.pdf
+          name: Final-Automated-Delivery-Lab-${{ inputs.manuscript_number }}
+          path: Numeromancy_Final_Automated_Delivery_Lab_${{ inputs.manuscript_number }}.pdf
