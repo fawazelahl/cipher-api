@@ -620,11 +620,21 @@ Numeromancy Production System v1.0
             "equations_count": total_equations
         }
 
-    send_email(
-        qc_email,
-        f"Numeromancy QC — {name} — Numeric Name {numeric_name}",
-        message
-    )
+    payload = {
+    "to": qc_email,
+    "subject": f"Numeromancy QC — {name} — Numeric Name {numeric_name}",
+    "body": message
+}
+
+req = urllib.request.Request(
+    "https://script.google.com/macros/s/AKfycbypLBWYTuZFNBgSH7mH7S_m8THJU2QBxcMjX8zRVfJlDJT_O2x0Lw6lVGHf2OZ7n8T0/exec",
+    data=json.dumps(payload).encode("utf-8"),
+    headers={"Content-Type": "application/json"},
+    method="POST"
+)
+
+with urllib.request.urlopen(req, timeout=30) as response:
+    response.read()
 
     print("SHOPIFY BRANCH: QC email sent", flush=True)
 
