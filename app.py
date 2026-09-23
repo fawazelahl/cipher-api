@@ -8,6 +8,8 @@ import pandas as pd
 import os
 import smtplib
 from email.mime.text import MIMEText
+
+
 def send_email(to_email, subject, body):
     msg = MIMEText(body)
     msg["Subject"] = subject
@@ -20,7 +22,12 @@ def send_email(to_email, subject, body):
             os.environ["EMAIL_PASS"]
         )
         server.send_message(msg)
-ALLOWED_ORIGINS = ["https://ciphercontinuum.com", "https://theciphercontinuum.com"]
+
+
+ALLOWED_ORIGINS = [
+    "https://ciphercontinuum.com",
+    "https://theciphercontinuum.com"
+]
 TARGET_EQUATION = "C127_3434"
 
 app = FastAPI()
@@ -45,7 +52,11 @@ def health():
 
 
 def compute_number(name: str, dob: str) -> dict:
-    name_value = sum((ord(c.lower()) - 96) for c in name if c.isalpha())
+    name_value = sum(
+        (ord(c.lower()) - 96)
+        for c in name
+        if c.isalpha()
+    )
 
     # dob still arrives as YYYY-MM-DD from Shopify,
     # but Numeromancy uses only month and day.
@@ -65,10 +76,23 @@ def compute_number(name: str, dob: str) -> dict:
 
 
 def load_equations():
-    df = pd.read_excel("Elahl_Parsed_Equations_FULL.xlsx", sheet_name=0)
+    df = pd.read_excel(
+        "Elahl_Parsed_Equations_FULL.xlsx",
+        sheet_name=0
+    )
+
     if "equation" not in df.columns:
-        raise HTTPException(status_code=500, detail="Missing equation column")
-    return df["equation"].dropna().astype(str).tolist()
+        raise HTTPException(
+            status_code=500,
+            detail="Missing equation column"
+        )
+
+    return (
+        df["equation"]
+        .dropna()
+        .astype(str)
+        .tolist()
+    )
 
 
 def parse_eq(eq):
@@ -76,17 +100,30 @@ def parse_eq(eq):
         return None
 
     left, right = eq.split("_", 1)
-    main = "".join(c for c in left if c.isdigit())
-    bridge = "".join(c for c in right if c.isdigit())
+
+    main = "".join(
+        c for c in left
+        if c.isdigit()
+    )
+
+    bridge = "".join(
+        c for c in right
+        if c.isdigit()
+    )
 
     if not main or not bridge:
         return None
 
-    return {"eq": eq, "main": main, "bridge": bridge}
+    return {
+        "eq": eq,
+        "main": main,
+        "bridge": bridge
+    }
 
 
 def family_of(p):
     fam = set()
+
     fam.add(p["main"])
     fam.add(p["main"][::-1])
     fam.add(p["bridge"])
@@ -95,7 +132,13 @@ def family_of(p):
     if len(p["bridge"]) >= 3:
         first3 = p["bridge"][:3]
         last3 = p["bridge"][-3:]
-        fam.update([first3, last3, first3[::-1], last3[::-1]])
+
+        fam.update([
+            first3,
+            last3,
+            first3[::-1],
+            last3[::-1]
+        ])
 
     return fam
 
@@ -106,6 +149,7 @@ def build_map(equations):
 
     for eq in equations:
         p = parse_eq(eq)
+
         if not p:
             continue
 
@@ -125,16 +169,26 @@ RATE = 30
 
 @app.middleware("http")
 async def rate_limit(request: Request, call_next):
-    ip = request.headers.get("x-forwarded-for", request.client.host).split(",")[0].strip()
+    ip = request.headers.get(
+        "x-forwarded-for",
+        request.client.host
+    ).split(",")[0].strip()
+
     now = int(time.time())
     reset = now // 3600
 
     if ip not in BUCKET or BUCKET[ip][0] != reset:
         BUCKET[ip] = [reset, RATE]
+
     else:
         if BUCKET[ip][1] == 0:
             from fastapi.responses import JSONResponse
-            return JSONResponse({"error": "Rate limit exceeded"}, status_code=429)
+
+            return JSONResponse(
+                {"error": "Rate limit exceeded"},
+                status_code=429
+            )
+
         BUCKET[ip][1] -= 1
 
     return await call_next(request)
@@ -144,11 +198,20 @@ async def rate_limit(request: Request, call_next):
 def compute(payload: Payload):
     try:
         date.fromisoformat(payload.dob)
-    except:
-        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
 
-    out = compute_number(payload.name, payload.dob)
+    except:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid date (YYYY-MM-DD)"
+        )
+
+    out = compute_number(
+        payload.name,
+        payload.dob
+    )
+
     out["version"] = "v1.0.0"
+
     return out
 
 
@@ -158,40 +221,66 @@ def numeromancy_report(payload: Payload):
 
     intro = (
         "Your Numeric Name has generated three preview corridors. "
-"The equations below are the first steps of your pathway. "
-"The complete report contains 55 equations leading toward the final convergence: C127_3434."
+        "The equations below are the first steps of your pathway. "
+        "The complete report contains 55 equations leading toward "
+        "the final convergence: C127_3434."
     )
 
     return {
         "numeric_name": result["numeric_name"],
         "intro": intro,
-        "preview_3_equations": result["preview_3_equations"],
-        "full_55_equations": result["full_55_equations"],
-        "equation_count": result["equation_count"],
-        "final_equation": result["final_equation"]
+        "preview_3_equations":
+            result["preview_3_equations"],
+        "full_55_equations":
+            result["full_55_equations"],
+        "equation_count":
+            result["equation_count"],
+        "final_equation":
+            result["final_equation"]
     }
+
 
 @app.post("/api/corridor-debug")
 def corridor_debug(payload: Payload):
     try:
         date.fromisoformat(payload.dob)
-    except:
-        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
 
-    result = compute_number(payload.name, payload.dob)
+    except:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid date (YYYY-MM-DD)"
+        )
+
+    result = compute_number(
+        payload.name,
+        payload.dob
+    )
+
     numeric_name = result["result"]
 
     equations = load_equations()
     lookup, index = build_map(equations)
 
-    start_keys = {str(numeric_name), str(numeric_name)[::-1]}
+    start_keys = {
+        str(numeric_name),
+        str(numeric_name)[::-1]
+    }
+
     starts = []
+
     for key in start_keys:
-        starts.extend(index.get(key, []))
+        starts.extend(
+            index.get(key, [])
+        )
 
-    starts = list(dict.fromkeys(starts))
+    starts = list(
+        dict.fromkeys(starts)
+    )
 
-    queue = deque([[s] for s in starts])
+    queue = deque(
+        [[s] for s in starts]
+    )
+
     visited = set(starts)
     path = []
 
@@ -206,18 +295,29 @@ def corridor_debug(payload: Payload):
         if len(current_path) >= 55:
             continue
 
-        fam = lookup.get(current, set())
+        fam = lookup.get(
+            current,
+            set()
+        )
+
         next_eqs = []
 
         for n in fam:
-            next_eqs.extend(index.get(n, []))
+            next_eqs.extend(
+                index.get(n, [])
+            )
 
-        next_eqs = list(dict.fromkeys(next_eqs))
+        next_eqs = list(
+            dict.fromkeys(next_eqs)
+        )
 
         for nx in next_eqs:
             if nx not in visited:
                 visited.add(nx)
-                queue.append(current_path + [nx])
+
+                queue.append(
+                    current_path + [nx]
+                )
 
     return {
         "numeric_name": numeric_name,
@@ -225,33 +325,61 @@ def corridor_debug(payload: Payload):
         "path_found": bool(path),
         "path_length": len(path),
         "path_preview": path[:10],
-        "final_equation": path[-1] if path else None,
+        "final_equation":
+            path[-1] if path else None
     }
+
+
 @app.post("/api/corridor-55-debug")
 def corridor_55_debug(payload: Payload):
     try:
         date.fromisoformat(payload.dob)
-    except:
-        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
 
-    result = compute_number(payload.name, payload.dob)
+    except:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid date (YYYY-MM-DD)"
+        )
+
+    result = compute_number(
+        payload.name,
+        payload.dob
+    )
+
     numeric_name = result["result"]
 
     equations = load_equations()
     lookup, index = build_map(equations)
 
     # First: find the real path to C127_3434
-    start_keys = {str(numeric_name), str(numeric_name)[::-1]}
+    start_keys = {
+        str(numeric_name),
+        str(numeric_name)[::-1]
+    }
+
     starts = []
+
     for key in start_keys:
-        starts.extend(index.get(key, []))
+        starts.extend(
+            index.get(key, [])
+        )
 
-    starts = list(dict.fromkeys(starts))
+    starts = list(
+        dict.fromkeys(starts)
+    )
 
-    # If the viewer's number is already 127, do not start with the final anchor.
+    # If the viewer's number is already 127,
+    # do not start with the final anchor.
     # The final anchor must remain equation 55.
-    starts = [eq for eq in starts if eq != TARGET_EQUATION]
-    queue = deque([[s] for s in starts])
+    starts = [
+        eq for eq in starts
+        if eq != TARGET_EQUATION
+    ]
+
+    queue = deque(
+        [[s] for s in starts]
+    )
+
     visited = set(starts)
     path = []
 
@@ -266,84 +394,149 @@ def corridor_55_debug(payload: Payload):
         if len(current_path) >= 55:
             continue
 
-        fam = lookup.get(current, set())
+        fam = lookup.get(
+            current,
+            set()
+        )
+
         next_eqs = []
 
         for n in fam:
-            next_eqs.extend(index.get(n, []))
+            next_eqs.extend(
+                index.get(n, [])
+            )
 
-        next_eqs = list(dict.fromkeys(next_eqs))
+        next_eqs = list(
+            dict.fromkeys(next_eqs)
+        )
 
         for nx in next_eqs:
             if nx not in visited:
                 visited.add(nx)
-                queue.append(current_path + [nx])
+
+                queue.append(
+                    current_path + [nx]
+                )
 
     if not path:
         return {
             "numeric_name": numeric_name,
             "path_found": False,
-            "message": "No path to C127_3434 found."
+            "message":
+                "No path to C127_3434 found."
         }
 
     # Second: expand path into 54 related unused equations
-    base_path = path[:-1]  # remove C127_3434 temporarily
+    base_path = path[:-1]
     expanded = list(base_path)
     used = set(expanded)
     i = 0
 
-    while len(expanded) < 54 and expanded:
-        current = expanded[i % len(expanded)]
-        fam = lookup.get(current, set())
+    while (
+        len(expanded) < 54
+        and expanded
+    ):
+        current = expanded[
+            i % len(expanded)
+        ]
+
+        fam = lookup.get(
+            current,
+            set()
+        )
 
         candidates = []
-        for n in fam:
-            candidates.extend(index.get(n, []))
 
-        candidates = [eq for eq in dict.fromkeys(candidates) if eq not in used and eq != TARGET_EQUATION]
+        for n in fam:
+            candidates.extend(
+                index.get(n, [])
+            )
+
+        candidates = [
+            eq
+            for eq in dict.fromkeys(candidates)
+            if (
+                eq not in used
+                and eq != TARGET_EQUATION
+            )
+        ]
 
         if candidates:
             chosen = candidates[0]
             expanded.append(chosen)
             used.add(chosen)
+
         else:
             i += 1
+
             if i > len(expanded) * 3:
                 break
 
-    full_55 = expanded[:54] + [TARGET_EQUATION]
+    full_55 = (
+        expanded[:54]
+        + [TARGET_EQUATION]
+    )
 
     return {
         "numeric_name": numeric_name,
         "path_found": True,
-        "original_path_length": len(path),
+        "original_path_length":
+            len(path),
         "original_path": path,
-        "equation_count": len(full_55),
-        "preview_3_equations": full_55[:3],
-        "first_10_equations": full_55[:10],
-        "full_55_equations": full_55,
-        "final_equation": full_55[-1]
+        "equation_count":
+            len(full_55),
+        "preview_3_equations":
+            full_55[:3],
+        "first_10_equations":
+            full_55[:10],
+        "full_55_equations":
+            full_55,
+        "final_equation":
+            full_55[-1]
     }
+
+
 @app.post("/api/corridor-3-debug")
 def corridor_3_debug(payload: Payload):
     try:
         date.fromisoformat(payload.dob)
-    except:
-        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
 
-    result = compute_number(payload.name, payload.dob)
+    except:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid date (YYYY-MM-DD)"
+        )
+
+    result = compute_number(
+        payload.name,
+        payload.dob
+    )
+
     numeric_name = result["result"]
 
     equations = load_equations()
     lookup, index = build_map(equations)
 
-    start_keys = {str(numeric_name), str(numeric_name)[::-1]}
-    starts = []
-    for key in start_keys:
-        starts.extend(index.get(key, []))
+    start_keys = {
+        str(numeric_name),
+        str(numeric_name)[::-1]
+    }
 
-    starts = list(dict.fromkeys(starts))
-    starts = [eq for eq in starts if eq != TARGET_EQUATION]
+    starts = []
+
+    for key in start_keys:
+        starts.extend(
+            index.get(key, [])
+        )
+
+    starts = list(
+        dict.fromkeys(starts)
+    )
+
+    starts = [
+        eq for eq in starts
+        if eq != TARGET_EQUATION
+    ]
 
     def build_55_from_start(start_eq):
         base_path = [start_eq]
@@ -351,67 +544,117 @@ def corridor_3_debug(payload: Payload):
         used = set(expanded)
         i = 0
 
-        while len(expanded) < 54 and expanded:
-            current = expanded[i % len(expanded)]
-            fam = lookup.get(current, set())
+        while (
+            len(expanded) < 54
+            and expanded
+        ):
+            current = expanded[
+                i % len(expanded)
+            ]
+
+            fam = lookup.get(
+                current,
+                set()
+            )
 
             candidates = []
+
             for n in fam:
-                candidates.extend(index.get(n, []))
+                candidates.extend(
+                    index.get(n, [])
+                )
 
             candidates = [
-                eq for eq in dict.fromkeys(candidates)
-                if eq not in used and eq != TARGET_EQUATION
+                eq
+                for eq in dict.fromkeys(
+                    candidates
+                )
+                if (
+                    eq not in used
+                    and eq != TARGET_EQUATION
+                )
             ]
 
             if candidates:
                 chosen = candidates[0]
                 expanded.append(chosen)
                 used.add(chosen)
+
             else:
                 i += 1
+
                 if i > len(expanded) * 3:
                     break
 
-        full_55 = expanded[:54] + [TARGET_EQUATION]
+        full_55 = (
+            expanded[:54]
+            + [TARGET_EQUATION]
+        )
 
         return {
-            "start_equation": start_eq,
-            "equation_count": len(full_55),
-            "preview_3_equations": full_55[:3],
-            "first_10_equations": full_55[:10],
-            "full_55_equations": full_55,
-            "final_equation": full_55[-1]
+            "start_equation":
+                start_eq,
+            "equation_count":
+                len(full_55),
+            "preview_3_equations":
+                full_55[:3],
+            "first_10_equations":
+                full_55[:10],
+            "full_55_equations":
+                full_55,
+            "final_equation":
+                full_55[-1]
         }
 
     corridors = []
+
     for start in starts[:3]:
-        corridors.append(build_55_from_start(start))
+        corridors.append(
+            build_55_from_start(start)
+        )
 
     return {
-        "numeric_name": numeric_name,
-        "start_candidates": starts[:10],
-        "corridor_count": len(corridors),
-        "corridors": corridors
+        "numeric_name":
+            numeric_name,
+        "start_candidates":
+            starts[:10],
+        "corridor_count":
+            len(corridors),
+        "corridors":
+            corridors
     }
+
+
 @app.post("/api/archive-mine-debug")
 def archive_mine_debug(payload: Payload):
     try:
         date.fromisoformat(payload.dob)
-    except:
-        raise HTTPException(status_code=400, detail="Invalid date (YYYY-MM-DD)")
 
-    result = corridor_3_debug(payload)
+    except:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid date (YYYY-MM-DD)"
+        )
+
+    result = corridor_3_debug(
+        payload
+    )
 
     mined = []
 
-    for idx, corridor in enumerate(result["corridors"], start=1):
-        equations = corridor["full_55_equations"]
+    for idx, corridor in enumerate(
+        result["corridors"],
+        start=1
+    ):
+        equations = corridor[
+            "full_55_equations"
+        ]
 
         digit_families = defaultdict(int)
 
         for eq in equations:
             p = parse_eq(eq)
+
             if not p:
                 continue
 
@@ -427,32 +670,77 @@ def archive_mine_debug(payload: Payload):
         )[:12]
 
         mined.append({
-            "corridor": idx,
-            "start_equation": corridor["start_equation"],
-            "preview_3_equations": corridor["preview_3_equations"],
-            "top_digit_families": top_families,
-            "final_equation": corridor["final_equation"]
+            "corridor":
+                idx,
+            "start_equation":
+                corridor[
+                    "start_equation"
+                ],
+            "preview_3_equations":
+                corridor[
+                    "preview_3_equations"
+                ],
+            "top_digit_families":
+                top_families,
+            "final_equation":
+                corridor[
+                    "final_equation"
+                ]
         })
 
     return {
-        "numeric_name": result["numeric_name"],
-        "corridor_count": result["corridor_count"],
-        "mining_note": "Top digit families show which number-neighborhoods dominate each corridor.",
-        "corridors": mined
+        "numeric_name":
+            result["numeric_name"],
+        "corridor_count":
+            result["corridor_count"],
+        "mining_note":
+            "Top digit families show which "
+            "number-neighborhoods dominate "
+            "each corridor.",
+        "corridors":
+            mined
     }
+
+
 @app.post("/api/shopify-order-paid")
-async def shopify_order_paid(request: Request):
+async def shopify_order_paid(
+    request: Request
+):
     data = await request.json()
-    print("SHOPIFY DEBUG:", "email=", data.get("email"), "properties=", [item.get("properties", []) for item in data.get("line_items", [])], flush=True)
+
+    print(
+        "SHOPIFY DEBUG:",
+        "email=",
+        data.get("email"),
+        "properties=",
+        [
+            item.get(
+                "properties",
+                []
+            )
+            for item
+            in data.get(
+                "line_items",
+                []
+            )
+        ],
+        flush=True
+    )
 
     email = data.get("email")
-    line_items = data.get("line_items", [])
+    line_items = data.get(
+        "line_items",
+        []
+    )
 
     name = None
     dob = None
 
     for item in line_items:
-        props = item.get("properties", [])
+        props = item.get(
+            "properties",
+            []
+        )
 
         for p in props:
             prop_name = p.get("name")
@@ -461,61 +749,138 @@ async def shopify_order_paid(request: Request):
             if prop_name == "name":
                 name = prop_value
 
-            if prop_name == "dob" or prop_name == "_dob":
+            if (
+                prop_name == "dob"
+                or prop_name == "_dob"
+            ):
                 dob = prop_value
 
-            if prop_name == "birth_date" and not dob:
-                month, day = prop_value.split("/")
-                dob = f"1990-{month}-{day}"
+            if (
+                prop_name == "birth_date"
+                and not dob
+            ):
+                month, day = (
+                    prop_value.split("/")
+                )
+
+                dob = (
+                    f"1990-{month}-{day}"
+                )
 
     if not name or not dob:
-        print("SHOPIFY BRANCH: missing data", "name=", name, "dob=", dob, flush=True)
+        print(
+            "SHOPIFY BRANCH: missing data",
+            "name=",
+            name,
+            "dob=",
+            dob,
+            flush=True
+        )
+
         return {
-            "status": "missing data",
-            "email": email,
-            "name": name,
-            "dob": dob
+            "status":
+                "missing data",
+            "email":
+                email,
+            "name":
+                name,
+            "dob":
+                dob
         }
 
-    result = corridor_3_debug(Payload(name=name, dob=dob))
+    result = corridor_3_debug(
+        Payload(
+            name=name,
+            dob=dob
+        )
+    )
 
-    corridors = result.get("corridors", [])
-    numeric_name = result.get("numeric_name")
+    corridors = result.get(
+        "corridors",
+        []
+    )
+
+    numeric_name = result.get(
+        "numeric_name"
+    )
 
     if len(corridors) != 3:
-        print("SHOPIFY BRANCH: corridor count failure", "count=", len(corridors), flush=True)
+        print(
+            "SHOPIFY BRANCH: "
+            "corridor count failure",
+            "count=",
+            len(corridors),
+            flush=True
+        )
+
         return {
-            "status": "qc_required",
-            "reason": "Expected 3 corridors",
-            "email": email,
-            "name": name,
-            "dob": dob,
-            "numeric_name": numeric_name,
-            "corridor_count": len(corridors)
+            "status":
+                "qc_required",
+            "reason":
+                "Expected 3 corridors",
+            "email":
+                email,
+            "name":
+                name,
+            "dob":
+                dob,
+            "numeric_name":
+                numeric_name,
+            "corridor_count":
+                len(corridors)
         }
 
     corridor_sections = []
     total_equations = 0
 
-    for idx, corridor in enumerate(corridors, start=1):
-        equations = corridor.get("full_55_equations", [])
+    for idx, corridor in enumerate(
+        corridors,
+        start=1
+    ):
+        equations = corridor.get(
+            "full_55_equations",
+            []
+        )
 
         if len(equations) != 55:
-            print("SHOPIFY BRANCH: equation count failure", "corridor=", idx, "count=", len(equations), flush=True)
+            print(
+                "SHOPIFY BRANCH: "
+                "equation count failure",
+                "corridor=",
+                idx,
+                "count=",
+                len(equations),
+                flush=True
+            )
+
             return {
-                "status": "qc_required",
-                "reason": f"Corridor {idx} does not contain 55 equations",
-                "email": email,
-                "name": name,
-                "dob": dob,
-                "numeric_name": numeric_name,
-                "corridor": idx,
-                "equation_count": len(equations)
+                "status":
+                    "qc_required",
+                "reason":
+                    f"Corridor {idx} "
+                    "does not contain "
+                    "55 equations",
+                "email":
+                    email,
+                "name":
+                    name,
+                "dob":
+                    dob,
+                "numeric_name":
+                    numeric_name,
+                "corridor":
+                    idx,
+                "equation_count":
+                    len(equations)
             }
 
-        total_equations += len(equations)
+        total_equations += len(
+            equations
+        )
 
-        corridor_text = "\n".join(equations)
+        corridor_text = "\n".join(
+            equations
+        )
 
         corridor_sections.append(
             f"""
@@ -531,18 +896,34 @@ Final Equation:
         )
 
     if total_equations != 165:
-        print("SHOPIFY BRANCH: total equation failure", "total=", total_equations, flush=True)
+        print(
+            "SHOPIFY BRANCH: "
+            "total equation failure",
+            "total=",
+            total_equations,
+            flush=True
+        )
+
         return {
-            "status": "qc_required",
-            "reason": "Expected 165 total equations",
-            "email": email,
-            "name": name,
-            "dob": dob,
-            "numeric_name": numeric_name,
-            "equations_count": total_equations
+            "status":
+                "qc_required",
+            "reason":
+                "Expected 165 total equations",
+            "email":
+                email,
+            "name":
+                name,
+            "dob":
+                dob,
+            "numeric_name":
+                numeric_name,
+            "equations_count":
+                total_equations
         }
 
-    all_corridors_text = "\n".join(corridor_sections)
+    all_corridors_text = "\n".join(
+        corridor_sections
+    )
 
     message = f"""
 NUMEROMANCY PRODUCTION SYSTEM v1.0
@@ -606,49 +987,173 @@ Numeromancy Production System v1.0
     import urllib.request
     import json
 
-    qc_email = os.environ.get("EMAIL_USER")
+    qc_email = os.environ.get(
+        "EMAIL_USER"
+    )
 
     if not qc_email:
-        print("SHOPIFY BRANCH: qc email not configured", flush=True)
+        print(
+            "SHOPIFY BRANCH: "
+            "qc email not configured",
+            flush=True
+        )
+
         return {
-            "status": "165 equations generated - qc email not configured",
-            "customer_email": email,
-            "name": name,
-            "dob": dob,
-            "numeric_name": numeric_name,
-            "corridor_count": len(corridors),
-            "equations_count": total_equations
+            "status":
+                "165 equations generated - "
+                "qc email not configured",
+            "customer_email":
+                email,
+            "name":
+                name,
+            "dob":
+                dob,
+            "numeric_name":
+                numeric_name,
+            "corridor_count":
+                len(corridors),
+            "equations_count":
+                total_equations
         }
 
     payload = {
-        "to": qc_email,
-        "subject": f"Numeromancy QC — {name} — Numeric Name {numeric_name}",
-        "body": message
+        "to":
+            qc_email,
+        "subject":
+            f"Numeromancy QC — "
+            f"{name} — "
+            f"Numeric Name {numeric_name}",
+        "body":
+            message
     }
 
     req = urllib.request.Request(
-        "https://script.google.com/macros/s/AKfycbypLBWYTuZFNBgSH7mH7S_m8THJU2QBxcMjX8zRVfJlDJT_O2x0Lw6lVGHf2OZ7n8T0/exec",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        "https://script.google.com/macros/s/"
+        "AKfycbypLBWYTuZFNBgSH7mH7S_m8THJU2QBxcMjX8zRVfJlDJT_O2x0Lw6lVGHf2OZ7n8T0/"
+        "exec",
+        data=json.dumps(
+            payload
+        ).encode("utf-8"),
+        headers={
+            "Content-Type":
+                "application/json"
+        },
         method="POST"
     )
 
-    with urllib.request.urlopen(req, timeout=30) as response:
+    with urllib.request.urlopen(
+        req,
+        timeout=30
+    ) as response:
         response.read()
 
-    print("SHOPIFY BRANCH: QC email sent", flush=True)
+    print(
+        "SHOPIFY BRANCH: QC email sent",
+        flush=True
+    )
+
+    # -------------------------------------------------
+    # SHOPIFY PAID ORDER -> FINAL AUTOMATED DELIVERY
+    # -------------------------------------------------
+
+    github_token = os.environ.get(
+        "GITHUB_TOKEN"
+    )
+
+    if not github_token:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "GITHUB_TOKEN "
+                "is not configured"
+            )
+        )
+
+    manuscript_number = str(
+        data.get("order_number")
+        or data.get("id")
+    )
+
+    workflow_payload = {
+        "ref": "main",
+        "inputs": {
+            "name":
+                name,
+            "dob":
+                dob,
+            "manuscript_number":
+                manuscript_number
+        }
+    }
+
+    workflow_url = (
+        "https://api.github.com/repos/"
+        "fawazelahl/cipher-api/"
+        "actions/workflows/"
+        "automated-delivery-lab.yml/"
+        "dispatches"
+    )
+
+    workflow_req = (
+        urllib.request.Request(
+            workflow_url,
+            data=json.dumps(
+                workflow_payload
+            ).encode("utf-8"),
+            headers={
+                "Authorization":
+                    f"Bearer {github_token}",
+                "Accept":
+                    "application/"
+                    "vnd.github+json",
+                "X-GitHub-Api-Version":
+                    "2022-11-28",
+                "Content-Type":
+                    "application/json",
+                "User-Agent":
+                    "cipher-api"
+            },
+            method="POST"
+        )
+    )
+
+    with urllib.request.urlopen(
+        workflow_req,
+        timeout=30
+    ) as response:
+        response.read()
+
+    print(
+        "SHOPIFY BRANCH: "
+        "Final Automated Delivery triggered",
+        "manuscript_number=",
+        manuscript_number,
+        flush=True
+    )
 
     return {
-        "status": "165 equations generated - awaiting qc",
-        "customer_email": email,
-        "qc_email": qc_email,
-        "name": name,
-        "dob": dob,
-        "numeric_name": numeric_name,
-        "corridor_count": len(corridors),
-        "equations_count": total_equations,
+        "status":
+            "final automated delivery triggered",
+        "customer_email":
+            email,
+        "qc_email":
+            qc_email,
+        "name":
+            name,
+        "dob":
+            dob,
+        "numeric_name":
+            numeric_name,
+        "manuscript_number":
+            manuscript_number,
+        "corridor_count":
+            len(corridors),
+        "equations_count":
+            total_equations,
         "final_equations": [
-            corridor.get("final_equation")
+            corridor.get(
+                "final_equation"
+            )
             for corridor in corridors
         ]
     }
