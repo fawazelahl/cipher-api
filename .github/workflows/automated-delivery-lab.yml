@@ -15,6 +15,10 @@ on:
         description: "Manuscript number"
         required: true
         default: "9005"
+      customer_email:
+        description: "Customer email"
+        required: false
+        default: ""
 
 jobs:
   automated-delivery-lab:
@@ -24,6 +28,7 @@ jobs:
       CUSTOMER_NAME: ${{ inputs.name }}
       CUSTOMER_DOB: ${{ inputs.dob }}
       MANUSCRIPT_NUMBER: ${{ inputs.manuscript_number }}
+      CUSTOMER_EMAIL: ${{ inputs.customer_email }}
 
     steps:
       - name: Check out repository
@@ -286,3 +291,65 @@ jobs:
         with:
           name: Final-Automated-Delivery-Lab-${{ inputs.manuscript_number }}
           path: Numeromancy_Final_Automated_Delivery_Lab_${{ inputs.manuscript_number }}.pdf
+
+      - name: Deliver final PDF to customer
+        if: ${{ inputs.customer_email != '' }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          import json
+          import os
+          from urllib.request import Request, urlopen
+
+          customer_name = os.environ["CUSTOMER_NAME"]
+          customer_email = os.environ["CUSTOMER_EMAIL"]
+          manuscript_number = os.environ["MANUSCRIPT_NUMBER"]
+
+          final_pdf = Path(
+              f"Numeromancy_Final_Automated_Delivery_Lab_{manuscript_number}.pdf"
+          )
+
+          payload = {
+              "to": customer_email,
+              "subject": f"Your Numeromancy Manuscript #{manuscript_number}",
+              "body": (
+                  f"Dear {customer_name},\n\n"
+                  "Thank you for your purchase.\n\n"
+                  "Your personalized 30-page Numeromancy manuscript is attached.\n\n"
+                  "THE CIPHER CONTINUUM"
+              ),
+              "filename": f"Numeromancy_Manuscript_{manuscript_number}.pdf",
+              "pdf_base64": base64.b64encode(
+                  final_pdf.read_bytes()
+              ).decode("ascii"),
+          }
+
+          request = Request(
+              "https://script.google.com/macros/s/"
+              "AKfycbypLBWYTuZFNBgSH7mH7S_m8THJU2QBxcMjX8zRVfJlDJT_O2x0Lw6lVGHf2OZ7n8T0/"
+              "exec",
+              data=json.dumps(payload).encode("utf-8"),
+              headers={"Content-Type": "application/json"},
+              method="POST",
+          )
+
+          response_text = urlopen(
+              request,
+              timeout=120
+          ).read().decode("utf-8")
+
+          print(f"Delivery service response: {response_text}")
+
+          result = json.loads(response_text)
+
+          if not result.get("ok"):
+              raise ValueError(
+                  "CUSTOMER DELIVERY FAILED: "
+                  + str(result.get("error", "unknown error"))
+              )
+
+          print(
+              f"CUSTOMER PDF DELIVERY: PASSED for {customer_email}"
+          )
+          PY
