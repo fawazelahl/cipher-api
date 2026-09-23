@@ -1074,13 +1074,15 @@ Numeromancy Production System v1.0
         or data.get("id")
     )
 
-    workflow_payload = {
+       workflow_payload = {
         "ref": "main",
         "inputs": {
             "name":
                 name,
             "dob":
                 dob,
+            "customer_email":
+                email,
             "manuscript_number":
                 manuscript_number
         }
