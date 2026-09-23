@@ -1081,6 +1081,8 @@ Numeromancy Production System v1.0
                 name,
             "dob":
                 dob,
+            "customer_email":
+                email,
             "manuscript_number":
                 manuscript_number
         }
